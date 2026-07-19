@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@CROSS WORKER - Management Board</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-black text-zinc-200 min-h-screen font-sans antialiased">
+
+    <!-- Header Navigation Header -->
+    <header class="bg-zinc-950 border-b border-zinc-900 p-5 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="h-2 w-2 rounded-none bg-yellow-500 animate-pulse"></span>
+                <h1 class="text-md font-black tracking-[0.2em] text-white">@CROSS WORKER</h1>
+            </div>
+            <span class="text-[9px] text-zinc-500 font-mono uppercase tracking-widest border border-zinc-900 px-3 py-1.5">Studio Panel Pipeline</span>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        <!-- LEFT CONTROL SYSTEM: WORKER POSTING PANEL (1 COLUMN) -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-zinc-950 border border-zinc-900 p-5 space-y-4">
+                <div class="border-b border-zinc-900 pb-2">
+                    <h3 class="text-xs font-black tracking-widest uppercase text-white">Post to Client Gallery</h3>
+                    <p class="text-[9px] uppercase text-zinc-500 mt-0.5">Upload new designs & price quotes</p>
+                </div>
+
+                <form onsubmit="publishToClient(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-[9px] uppercase text-zinc-400 mb-1">Item Title Name</label>
+                        <input type="text" id="postName" placeholder="e.g., Luxury Wing Hoodie" required class="w-full p-2 bg-zinc-900 border border-zinc-800 text-xs text-white focus:outline-none focus:border-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] uppercase text-zinc-400 mb-1">Set Price (ETB)</label>
+                        <input type="number" id="postPrice" placeholder="e.g., 2400" required class="w-full p-2 bg-zinc-900 border border-zinc-800 text-xs text-yellow-500 font-mono focus:outline-none focus:border-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] uppercase text-zinc-400 mb-1">Image Network URL</label>
+                        <input type="url" id="postImg" placeholder="https://images.unsplash.com/..." required class="w-full p-2 bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 text-xs focus:outline-none focus:border-yellow-500">
+                    </div>
+                    <button type="submit" class="w-full py-2.5 bg-yellow-500 text-black font-bold text-xs uppercase tracking-widest hover:bg-yellow-600 transition">
+                        Publish to Feed
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- RIGHT CONTROL SYSTEM: CLIENT PRODUCTION INTAKE FEED (3 COLUMNS) -->
+        <div class="lg:col-span-3 space-y-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-black tracking-wider uppercase text-white">Active Custom Production Queue</h2>
+                    <p class="text-zinc-500 text-[10px] uppercase tracking-widest mt-0.5">Live streaming orders detailing size parameters and total value</p>
+                </div>
+                <button onclick="clearAllOrders()" class="text-[9px] border border-red-900 text-red-400 px-3 py-1.5 hover:bg-red-950 font-bold tracking-widest uppercase">Clear Queue</button>
+            </div>
+
+            <div id="emptyMessage" class="hidden text-center py-20 border border-zinc-900 bg-zinc-950/20">
+                <p class="text-[10px] font-mono uppercase tracking-widest text-zinc-600">Queue completely clear. Awaiting clients...</p>
+            </div>
+
+            <div id="workerOrderGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Orders layout maps dynamically here -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function publishToClient(e) {
+            e.preventDefault();
+            const name = document.getElementById('postName').value;
+            const price = document.getElementById('postPrice').value;
+            const img = document.getElementById('postImg').value;
+
+            const newApparelPost = { item: name, price: price, img: img };
+
+            let totalPosts = JSON.parse(localStorage.getItem('cross_worker_posts')) || [];
+            totalPosts.unshift(newApparelPost); // Prepend so new items match top left of gallery
+            localStorage.setItem('cross_worker_posts', JSON.stringify(totalPosts));
+
+            alert(`✅ Posted "${name}" at ${price} ETB onto the customer facing gallery feed.`);
+            e.target.reset();
+        }
+
+        function reloadIncomingOrders() {
+            const grid = document.getElementById('workerOrderGrid');
+            const message = document.getElementById('emptyMessage');
+            const currentOrders = JSON.parse(localStorage.getItem('cross_production_stream')) || [];
+
+            if(currentOrders.length === 0) {
+                grid.innerHTML = "";
+                message.classList.remove('hidden');
+                return;
+            }
+
+            message.classList.add('hidden');
+            grid.innerHTML = currentOrders.reverse().map((order, relativeIndex) => `
+                <div class="bg-zinc-950 border border-zinc-900 p-5 flex flex-col justify-between hover:border-yellow-500/40 transition">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center border-b border-zinc-900 pb-2">
+                            <span class="text-xs font-mono font-bold text-yellow-500">[ ${order.id} ]</span>
+                            <span class="text-[10px] text-zinc-600 font-mono">${order.time}</span>
+                        </div>
+
+                        <div class="space-y-1">
+                            <span class="text-[8px] uppercase text-zinc-500 block">Requested Build Item</span>
+                            <span class="text-sm font-black text-white uppercase tracking-wide">${order.item}</span>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 text-center text-xs font-mono">
+                            <div class="bg-zinc-900 p-1.5 border border-zinc-900"><span class="text-[8px] text-zinc-500 block">SIZE</span><span class="text-white font-bold">${order.size}</span></div>
+                            <div class="bg-zinc-900 p-1.5 border border-zinc-900"><span class="text-[8px] text-zinc-500 block">QTY</span><span class="text-white font-bold">${order.qty}</span></div>
+                            <div class="bg-zinc-900 p-1.5 border border-zinc-900"><span class="text-[8px] text-zinc-500 block">TOTAL</span><span class="text-yellow-500 font-bold">${order.totalPrice}</span></div>
+                        </div>
+
+                        <div class="pt-2 border-t border-zinc-900/60 space-y-1 text-xs">
+                            <div><span class="text-[8px] text-zinc-500 uppercase block">Phone Dial</span><a href="tel:${order.phone}" class="text-zinc-300 font-mono underline hover:text-yellow-500">${order.phone}</a></div>
+                            <div><span class="text-[8px] text-zinc-500 uppercase block">Email Channel</span><span class="text-zinc-400 font-mono text-[11px]">${order.email}</span></div>
+                        </div>
+                    </div>
+
+                    <button onclick="fulfillOrder(${relativeIndex})" class="w-full mt-4 py-2 bg-transparent border border-zinc-800 text-zinc-400 hover:border-yellow-500 hover:bg-yellow-500 hover:text-black font-bold text-[10px] uppercase tracking-widest transition">
+                        Mark Fulfilled & Clear
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function fulfillOrder(index) {
+            let currentOrders = JSON.parse(localStorage.getItem('cross_production_stream')) || [];
+            currentOrders.reverse();
+            currentOrders.splice(index, 1);
+            currentOrders.reverse();
+            localStorage.setItem('cross_production_stream', JSON.stringify(currentOrders));
+            reloadIncomingOrders();
+        }
+
+        function clearAllOrders() {
+            if(confirm("Purge total queue records?")) {
+                localStorage.removeItem('cross_production_stream');
+                reloadIncomingOrders();
+            }
+        }
+
+        window.onload = reloadIncomingOrders;
+        setInterval(reloadIncomingOrders, 2500); // Poll and reload updates automatically every 2.5s
+    </script>
+</body>
+</html>
